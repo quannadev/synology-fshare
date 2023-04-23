@@ -10,7 +10,7 @@ class SynoFileHostingFshareVN {
     private $COOKIE_JAR = '/tmp/fsharevn.cookie';
     private $LOG_FILE = '/tmp/fsharevn.log';
     private $TOKEN_FILE = '/tmp/fsharevn.token';
-    
+
     public function __construct($Url, $Username, $Password, $HostInfo) {
         if(strpos($Url,'http://') !== FALSE){
             $Url = str_replace("http://", "https://", $Url);
@@ -30,29 +30,31 @@ class SynoFileHostingFshareVN {
 
         ini_set('max_execution_time', 300);
     }
-    
+
     public function Verify($ClearCookie) {
         if(file_exists($this->COOKIE_JAR)) {
             unlink($this->COOKIE_JAR);
         }
-            
+
         return $this->performLogin();
     }
-    
+
     public function GetDownloadInfo() {
         $DownloadInfo = array();
+
+
 
         $this->logInfo("Start getting download info");
 
         $needLogin = FALSE;
         $this->logInfo("Checking if need to re-login");
-        
+
         $this->Token = $this->getToken();
         if(empty($this->Token)) {
             $this->logInfo("Token is empty => need to login to get token");
             $needLogin = TRUE;
         }
-        
+
         if(!file_exists($this->COOKIE_JAR)) {
             $this->logInfo("Cookie file is not existed => need to login to get cookie");
             $needLogin = TRUE;
@@ -63,13 +65,13 @@ class SynoFileHostingFshareVN {
             if($this->Verify(FALSE) === LOGIN_FAIL) {
                 $DownloadInfo[DOWNLOAD_ERROR] = "Login fail!";
                 return $DownloadInfo;
-            }    
+            }
         }
 
         $downloadUrl = $this->getLink();
-        
+
         if(empty($downloadUrl) || $downloadUrl === "error") {
-            
+
             // get link may fail due to use expired token / cookie
             // => login and retry once
             if(!$needLogin) {
@@ -79,10 +81,10 @@ class SynoFileHostingFshareVN {
                     return $DownloadInfo;
                 }
 
-                $downloadUrl = $this->getLink();        
+                $downloadUrl = $this->getLink();
             }
 
-            $DownloadInfo[DOWNLOAD_ERROR] = "Get link fail";   
+            $DownloadInfo[DOWNLOAD_ERROR] = "Get link fail";
         }
         else
         {
@@ -94,13 +96,13 @@ class SynoFileHostingFshareVN {
         return $DownloadInfo;
 
     }
-    
+
     private function performLogin() {
         $ret = LOGIN_FAIL;
 
         $this->logInfo("Start login");
 
-        $service_url = 'https://api2.fshare.vn/api/user/login';
+        $service_url = 'https://api.fshare.vn/api/user/login';
         $curl = curl_init($service_url);
         $data = array(
             "app_key" => $this->AppId,
@@ -120,7 +122,7 @@ class SynoFileHostingFshareVN {
             "Content-Type: application/json",
             'Content-Length: ' . strlen($data_string)
         ));
-        
+
         $curl_response = curl_exec($curl);
 
         if(!$this->isOK($curl, $curl_response))
@@ -131,9 +133,9 @@ class SynoFileHostingFshareVN {
         {
             $this->Token = json_decode($curl_response)->{'token'};
             // save token to disk
-            $this->saveToken($this->Token); 
+            $this->saveToken($this->Token);
             $this->logInfo("Login ok");
-    
+
             $ret = USER_IS_PREMIUM;
         }
 
@@ -142,7 +144,7 @@ class SynoFileHostingFshareVN {
         curl_close($curl);
 
         return $ret;
-        
+
     }
 
     private function getLink() {
@@ -151,7 +153,7 @@ class SynoFileHostingFshareVN {
 
         $this->logInfo("Start Get Link: " . $this->Url);
 
-        $service_url = 'https://api2.fshare.vn/api/session/download';
+        $service_url = 'https://api.fshare.vn/api/session/download';
 
         $curl = curl_init($service_url);
         $data = array(
@@ -174,7 +176,7 @@ class SynoFileHostingFshareVN {
             "Content-Type: application/json",
             'Content-Length: ' . strlen($data_string)
         ));
-        
+
         $curl_response = curl_exec($curl);
 
         if(!$this->isOK($curl, $curl_response))
@@ -231,7 +233,7 @@ class SynoFileHostingFshareVN {
 
     private function isOK($curl, $curl_response) {
         $this->logInfo("HTTP Response: " . $curl_response);
-        
+
         if($curl_response === false) {
             return false;
         }
@@ -254,12 +256,12 @@ class SynoFileHostingFshareVN {
 
 }
 
-/*$url = "https://www.fshare.vn/file/BA7TDZNZQHUL";
-$username = "zang_itu@yahoo.com";
-$password = "asd123";
-
-$client = new SynoFileHostingFshareVN($url, $username, $password, NULL);
-$client->GetDownloadInfo();
-echo "DONE";*/
+//$url = "https://www.fshare.vn/file/BA7TDZNZQHUL";
+//$username = "abc";
+//$password = "abcd";
+//
+//$client = new SynoFileHostingFshareVN($url, $username, $password, NULL);
+//$client->GetDownloadInfo();
+//echo "DONE"
 
 ?>
